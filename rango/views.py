@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from rango.models import User
 
 def index(request):
 
@@ -118,8 +119,14 @@ def user_login(request):
 	if request.method == 'POST':
 		username = request.POST.get('username')
 		password = request.POST.get('password')
-		user = authenticate(username=username, password=password)
 		
+		
+		try:
+			user = User.objects.get(username = username)
+		except User.DoesNotExist:
+			return HttpResponse("Invalid username")
+		
+		user = authenticate(username=username, password=password)
 		if user:
 			if user.is_active:
 				login(request, user)
@@ -127,10 +134,14 @@ def user_login(request):
 				
 			else:
 				return HttpResponse("Your Rango account is disabled.")
-				
+			
+		elif username != username:
+			print("Invalid username: {0}".format(username))
+			return HttpResponse("Invalid username supplied.")
+			
 		else:
 			print("Invalid login details: {0}, {1}".format(username, password))
-			return HttpResponse("Invalid login details supplied.")
+			return HttpResponse("Invalid password")
 		
 	else:
 		return render(request, 'rango/login.html', {})
@@ -138,7 +149,7 @@ def user_login(request):
 @login_required
 def restricted(request):
 	
-	return HttpResponse("Since you're logged in, you can see this text!")
+	return render(request, "rango/restricted.html")
 	
 @login_required
 def user_logout(request):
